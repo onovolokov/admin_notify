@@ -1,0 +1,4 @@
+admin_notify_node_types: all
+
+directmail_email_subject: 'New Content Posted'
+directmail_email_body: 'A new content has been posted on your site'

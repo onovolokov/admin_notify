@@ -1,0 +1,7 @@
+admin_notify.admin_notify_config:
+  path: 'admin/config/notify/admin_notify'
+  defaults:
+    _form: '\Drupal\admin_notify\Form\AdminNotifyForm'
+    _title: 'Admin Notify Configuration'
+  requirements:
+   _permission: 'view admin notify config page'

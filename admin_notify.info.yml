@@ -1,0 +1,6 @@
+name: Admin Notify
+type: module
+description: 'To send e-mail to admin when a new content is posted on the site'
+package: Other
+version: 8.x-1.x
+core: 8.x

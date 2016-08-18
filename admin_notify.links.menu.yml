@@ -1,0 +1,5 @@
+admin_notify.config_menu:
+  title: 'Admin Notify Config settings'
+  description: 'Settings for module Admin Notify.'
+  route_name: admin_notify.admin_notify_config
+  parent: system.admin_config_services

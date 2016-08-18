@@ -1,0 +1,88 @@
+<?php
+/**
+ * @file
+ * Contains admin_notify.module.
+ */
+
+use Drupal\Core\Link;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Url;
+use Drupal\node\Entity\Node;
+
+/**
+ * {@inheritdoc}
+ */
+function admin_notify_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    case 'help.page.admin_notify':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('This simple module permits admin to recieve email when new content is posted on Drupal site');
+      return $output;
+  }
+}
+
+/**
+ * {@inheritdoc}
+ */
+function admin_notify_node_insert(Node $node) {
+  $from = \Drupal::config('system.site')->get('mail', ini_get('sendmail_from'));
+  $headers = array(
+    'Reply-to' => $from,
+    'Return-path' => "<$from>",
+    'Errors-to' => $from,
+  );
+  $mailManager = \Drupal::service('plugin.manager.mail');
+  $node_type = $node->getType();
+  global $base_url;
+  // Checking if the nodetype is the one selected.
+  $selected_node_types = \Drupal::config('admin_notify.settings')->get('admin_notify_node_types');
+  $node_type_exists = in_array($node_type, $selected_node_types);
+  if ($node_type_exists) {
+    // This is the selected node type.
+    // Please send an email to the user/admin.
+    $user_id = $node->getOwner();
+    $user_name = $user_id->getAccountName();
+    $config = Drupal::config('admin_notify.settings');
+    $subject = $config->get('directmail_email_subject');
+    $email_body = $config->get('directmail_email_body');
+    $url = Url::fromUri($base_url . '/node/' . $node->id());
+    $internal_link = Link::fromTextAndUrl(t('Admin notify check'), $url);
+    $generated_link = $internal_link->toString()->getGeneratedLink();
+    $body = $email_body . '<br/> Submitted by : ' . $user_name . ' <br/>' . 'New content link : ' . $generated_link;
+    $email = $config->get('admin_notify_email');
+    $langcode = \Drupal::currentUser()->getPreferredLangcode();
+    $params = array(
+      'subject' => $subject,
+      'message' => $body,
+      'headers' => $headers,
+    );
+    $key = 'admin_notify_key';
+    $result = $mailManager->mail('admin_notify', $key, $email, $langcode, $params, $from, TRUE);
+    if ($result['result'] !== true) {
+      $message = t('There was a problem sending your email notification to @email for creating node @id.', array('@email' => $email, '@id' => $node->id()));
+      drupal_set_message($message, 'error');
+      \Drupal::logger('admin_notify')->error($message);
+      return;
+    }
+
+    $message = t('An email notification has been sent to @email for creating node @id.', array('@email' => $email, '@id' => $node->id()));
+    drupal_set_message($message);
+    \Drupal::logger('admin_notify')->notice($message);
+  }
+}
+
+/**
+ * Implementation of hook_mail().
+ * @param <type> $key
+ * @param <type> $message
+ * @param <type> $params
+ */
+function admin_notify_mail($key, &$message, $params) {
+  switch ($key) {
+    case 'admin_notify_key':
+      $message['subject'] = $params['subject'];
+      $message['body'][] = $params['message'];
+      break;
+  }
+}
